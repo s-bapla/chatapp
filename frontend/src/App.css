@@ -1,0 +1,11 @@
+.App {
+  text-align: center;
+}
+
+
+body {
+  background-image: url('../public/premium_photo-1681487683141-e72c5ccd94e6.avif');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
