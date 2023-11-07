@@ -63,6 +63,14 @@ const Chat = ({ socket, name, room }) => {
   const leaveChat = () => {
     setShowLeaveModal(true);
   };
+
+  const handleKeyDown = (e) => {
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSend();
+    }
+  }
   return (
     <Container >
       <Row className="justify-content-md-center">
@@ -71,7 +79,7 @@ const Chat = ({ socket, name, room }) => {
             <div className="header">
               <h3>Chatr</h3>
             </div>
-            <ListGroup className="chat-messages">
+            <ListGroup className='' style={{height:'40vh', overflow:'auto' }}>
               {messageList.map((data, index) => (
                 <ListGroup.Item key={index}>
                   <small className="text-muted">{data.time} </small>
@@ -79,7 +87,7 @@ const Chat = ({ socket, name, room }) => {
                 </ListGroup.Item>
               ))}
             </ListGroup>
-            <Form className="footer">
+            <Form onSubmit={(e) => e.preventDefault()} className="footer">
               <Row>
                 <Col>
                   <Form.Control
@@ -87,15 +95,16 @@ const Chat = ({ socket, name, room }) => {
                     placeholder="Enter message to send"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
                   />
                 </Col>
                 <Col xs="auto">
-                  <Button onClick={handleSend}>Send</Button>
+                  <Button  onClick={handleSend}>Send</Button>
                 </Col>
               </Row>
             </Form>
           </div>
-          <Button onClick={leaveChat} className="btn-danger mt-3">
+          <Button  onClick={leaveChat} className="btn-danger mt-3">
             Leave Chat Room
           </Button>
         </Col>
