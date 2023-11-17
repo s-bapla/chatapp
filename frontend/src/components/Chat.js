@@ -42,37 +42,73 @@ const Chat = ({ socket, name, room }) => {
     }
   };
 
-const fetchAndSendGif = async () => {
-  try {
-    const response = await fetch("http://localhost:3001/fetch-gif");
-    const base64data = await response.text();
+  const fetchAndSendGif = async () => {
+    try {
+      const response = await fetch("http://localhost:4000/fetch-gif");
+      const blob = await response.blob();
 
-    const gifMessage = {
-      room,
-      name,
-      message: `data:image/gif;base64,${base64data}`,
-      time: new Date().toLocaleTimeString("en-US", {
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }),
-      isGif: true,
-    };
-    socket.emit("send-message", gifMessage);
-    setMessageList((list) => [...list, gifMessage]);
-  } catch (error) {
-    console.error("Error fetching and sending GIF", error);
-  }
-};
+      const arrayBuffer = await blob.arrayBuffer(); 
+      const objectURL = URL.createObjectURL(blob); 
+
+
+      const gifMessageForState = {
+        room,
+        name,
+        message: objectURL,
+        time: new Date().toLocaleTimeString("en-US", {
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }),
+        isGif: true,
+      };
+
+      // Add the GIF message to the local state for rendering
+      setMessageList((list) => [...list, gifMessageForState]);
+
+      // Create a new message object for sending over the socket
+      const gifMessageForSocket = {
+        ...gifMessageForState,
+        message: arrayBuffer, // Send the ArrayBuffer directly over the socket
+      };
+
+      // Emit the message over the socket
+      socket.emit("send-message", gifMessageForSocket);
+    } catch (error) {
+      console.error("Error fetching and sending GIF", error);
+    }
+  };
 
   useEffect(() => {
     const receiveMessage = (data) => {
-      setMessageList((list) => [...list, data]);
+      if (data.isGif) {
+        let arrayBuffer;
+
+        arrayBuffer = data.message;
+
+        const blob = new Blob([arrayBuffer], { type: "image/gif" });
+        const url = URL.createObjectURL(blob);
+
+        const newMessage = {
+          ...data,
+          message: url, 
+        };
+
+        setMessageList((list) => [...list, newMessage]);
+
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 10000);
+      } else {
+
+        setMessageList((list) => [...list, data]);
+      }
     };
 
     socket.on("receive-message", receiveMessage);
 
+    // Clean up the effect by removing the event listener
     return () => {
       socket.off("receive-message", receiveMessage);
     };
@@ -115,9 +151,7 @@ const fetchAndSendGif = async () => {
                       style={{ maxWidth: "100%" }}
                     />
                   ) : (
-                    <p style={{display:"inline-block"}}>
-                      {data.message}
-                    </p>
+                    <p style={{ display: "inline-block" }}>{data.message}</p>
                   )}
                 </ListGroup.Item>
               ))}
