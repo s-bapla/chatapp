@@ -42,21 +42,46 @@ const Chat = ({ socket, name, room }) => {
     }
   };
 
+const fetchAndSendGif = async () => {
+  try {
+    const response = await fetch("http://localhost:3001/fetch-gif");
+    const base64data = await response.text();
+
+    const gifMessage = {
+      room,
+      name,
+      message: `data:image/gif;base64,${base64data}`,
+      time: new Date().toLocaleTimeString("en-US", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }),
+      isGif: true,
+    };
+    socket.emit("send-message", gifMessage);
+    setMessageList((list) => [...list, gifMessage]);
+  } catch (error) {
+    console.error("Error fetching and sending GIF", error);
+  }
+};
+
   useEffect(() => {
     const receiveMessage = (data) => {
       setMessageList((list) => [...list, data]);
     };
 
-    
     socket.on("receive-message", receiveMessage);
 
-    
     return () => {
       socket.off("receive-message", receiveMessage);
     };
   }, [socket]);
 
   const confirmLeave = () => {
+    //socket.emit("customDisconnect", () =>
+    //  console.log(socket.id, "disconnected")
+    //);
     history.push("/");
   };
 
@@ -65,25 +90,35 @@ const Chat = ({ socket, name, room }) => {
   };
 
   const handleKeyDown = (e) => {
-
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleSend();
     }
-  }
+  };
   return (
-    <Container >
+    <Container>
       <Row className="justify-content-md-center">
         <Col md={8}>
           <div className="chat-box">
             <div className="header">
               <h3>Chatr</h3>
             </div>
-            <ListGroup className='' style={{height:'40vh', overflow:'auto' }}>
+            <ListGroup style={{ height: "40vh", overflow: "auto" }}>
               {messageList.map((data, index) => (
                 <ListGroup.Item key={index}>
                   <small className="text-muted">{data.time} </small>
-                  <strong>{data.name}</strong>: {data.message}
+                  <strong>{data.name}</strong>:
+                  {data.isGif ? (
+                    <img
+                      src={data.message}
+                      alt="Gif"
+                      style={{ maxWidth: "100%" }}
+                    />
+                  ) : (
+                    <p style={{display:"inline-block"}}>
+                      {data.message}
+                    </p>
+                  )}
                 </ListGroup.Item>
               ))}
             </ListGroup>
@@ -99,12 +134,13 @@ const Chat = ({ socket, name, room }) => {
                   />
                 </Col>
                 <Col xs="auto">
-                  <Button  onClick={handleSend}>Send</Button>
+                  <Button onClick={handleSend}>Send</Button>
+                  <Button onClick={fetchAndSendGif}>Send Random GIF</Button>
                 </Col>
               </Row>
             </Form>
           </div>
-          <Button  onClick={leaveChat} className="btn-danger mt-3">
+          <Button onClick={leaveChat} className="btn-danger mt-3">
             Leave Chat Room
           </Button>
         </Col>
